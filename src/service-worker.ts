@@ -126,7 +126,7 @@ export function setupContentScriptActivation(
       ? { inject: { scripts: options } }
       : options;
 
-  const { filterTab, inject, scriptId, injectOnClick } = resolvedOptions;
+  const { filterTab, inject, scriptId, injectOnClick = true } = resolvedOptions;
 
   async function activate(tab: Tab) {
     // check if it should run in tab
