@@ -98,7 +98,7 @@ export function setupContentScriptActivation(
   options:
     | string
     | string[]
-    | (ContentScriptActivationOptions & { injectOnClick: true }),
+    | (ContentScriptActivationOptions & { injectOnClick?: true }),
 ): void;
 /**
  * Sets up the content script activation system in the service worker.
