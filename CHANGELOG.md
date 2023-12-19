@@ -1,5 +1,11 @@
 # content-script-activation
 
+## 1.0.2
+
+### Patch Changes
+
+- 6176dc8: Fix: set injectOnClick to `true` by default.
+
 ## 1.0.1
 
 ### Patch Changes
