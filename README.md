@@ -1,96 +1,252 @@
-# My package template
+<h1>content-script-activation</h1>
 
-This is my personal npm package template. It uses the latest and greatest tools while keeping things simple.
+Simpler injection of content scripts in browser extensions. Inject once, activate on click.
 
-Here's what's included:
-
-- [Bun](https://bun.sh/): fast package manager and task runner.
-- [TypeScript](https://www.typescriptlang.org/): typed JavaScript.
-- [tshy](https://github.com/isaacs/tshy/): package builder. It Just Works™️ for ESM + CommonJS exports.
-- [Changesets](https://github.com/changesets/changesets): versioning, changelogs and releases.
-  - Includes a GitHub Action that automates changelogs and releases.
-- [ESLint](https://eslint.org/): linting.
-  - Using the recommended rules from [`eslint`](https://eslint.org/docs/latest/rules/) and [`@typescript-eslint`](https://typescript-eslint.io/rules/?=recommended) + deterministic import sort.
-- [Prettier](https://prettier.io/): code formatting.
-- Bug and feature request forms for GitHub issues.
-- Automatic pull request CI checks: types, format, and linting.
-
-## Usage
-
-The easiest way to use this template is by using `bun create`:
-
-```
-bun create DaniGuardiola/package-template my-package
+```bash
+npm i content-script-activation
 ```
 
-You can also use the "Use this template" button on GitHub.
+<!-- vscode-markdown-toc -->
 
-Once initialized, make sure to follow these steps:
+- [What this does](#what-this-does)
+- [Usage](#usage)
+- [Documentation](#documentation)
+  - [Filtering tabs](#filtering-tabs)
+  - [Executing code before or after injection](#executing-code-before-or-after-injection)
+  - [Injecting styles](#injecting-styles)
+  - [Customizing script and stylesheet injection](#customizing-script-and-stylesheet-injection)
+  - [Injecting multiple scripts and stylesheets](#injecting-multiple-scripts-and-stylesheets)
+  - [Scripts shorthands](#scripts-shorthands)
+  - [Omitting the activation callback](#omitting-the-activation-callback)
+  - [Multiple instances](#multiple-instances)
+  - [Manual activation](#manual-activation)
+- [Browser support](#browser-support)
+- [Features under consideration](#features-under-consideration)
 
-- [ ] Update the name, description and author in the `package.json` file.
-- [ ] Update the heading of the `CHANGELOG.md` file.
-- [ ] Replace the author in the `LICENSE` file.
-- [ ] Replace this README's content with your own.
-- [ ] Publish to GitHub.
-- [ ] Register the `NPM_TOKEN` secret for GitHub actions.
+<!-- vscode-markdown-toc-config
+	numbering=false
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
 
-  This is required to publish the package to npm from the `publish.yml` workflow.
+## <a name='Whatthisdoes'></a>What this does
 
-  1. Go to `https://www.npmjs.com/settings/<your username>/tokens`.
-  2. Generate a new access token that has read and write permissions for, at the very least, your new package.
-  3. Copy the token and go to your GitHub repository.
-  4. Go to Settings > Secrets and variables > Actions.
-  5. Create a new repository secret called `NPM_TOKEN` and paste the token as its value.
+When building a browser extension, it is a common pattern to inject a content script when the extension icon is clicked. This is usually done like this:
 
-- [ ] Enable the right permissions for the `GITHUB_TOKEN` secret:
+```ts
+browser.action.onClicked.addListener((tab) => {
+  browser.scripting.executeScript({
+    target: { tabId: tab.id },
+    files: ["content-script.js"],
+  });
+});
+```
 
-  This is required for Changesets to create and update pull requests for versioning from the `publish.yml` workflow.
+However, the problem is that on every click, the content script is injected again. This can cause trouble depending on how the content script is written. For example, if the content script adds an event listener to the `window` object, it will be added again on every click, leading to unexpected behavior.
 
-  1. In your GitHub repository, go to Settings > Actions > General.
-  2. Scroll down to "Workflow permissions".
-  3. Select the "Read and write permissions".
-  4. Enable "Allow GitHub Actions to create and approve pull requests".
+This package does things differently:
 
-- [ ] Create a great package and publish it to npm! 🚀
+- The content script is injected only once on the first click.
+- The "activation" event is triggered on every click, including the first one.
 
-## Releases
+To illustrate this, consider the following sequence of events:
 
-This template uses [Changesets](https://github.com/changesets/changesets) to manage releases. Check out their documentation to learn how to use it. The basic idea is:
+```
+Extension icon clicked
+  Content script injected
+  Activation event triggered
+Extension icon clicked
+  Activation event triggered
+Extension icon clicked
+  Activation event triggered
+(...)
+```
 
-1. Make changes.
-2. Run `bun changeset` to create a new changeset.
-3. Commit and push the changeset (either directly to `main` or by merging a pull request).
-4. A PR titled "Version Packages" will be created (or updated) by the `publish.yml` workflow.
-5. Merge the PR when you're ready to publish a new version.
-6. The `publish.yml` workflow will publish the new version to npm.
+This model is simpler and lets you think about "activation" as a single event that happens on every click. Script injection is handled for you.
 
-## Recommendations
+## <a name='Usage'></a>Usage
 
-This is a list of settings and other things that I usually do in my packages. They are not mandatory though!
+On the service worker:
 
-- General settings
+```ts
+import { setupContentScriptActivation } from "content-script-activation";
 
-  - [ ] Enable "Always suggest updating pull request branches".
-  - [ ] Enable "Allow auto-merge".
-  - [ ] Enable "Automatically delete head branches".
-  - [ ] From "Allow merge commits/squash merging/rebase merging" leave only "Allow squash merging" enabled.
-  - [ ] In the same setting, select "Default to pull request title".
+setupContentScriptActivation("content-script.js");
+```
 
-- Main branch protection
+On the content script:
 
-  In your GitHub repository, go to Settings > Branches and click "Add rule".
+```ts
+import { onActivation } from "content-script-activation";
 
-  - [ ] In "Branch name pattern", type "main".
-  - [ ] Enable "Require a pull request before merging".
-  - [ ] Enable "Require approvals".
-  - [ ] Enable "Require approval of the most recent reviewable push".
-  - [ ] Enable "Require status checks to pass before merging".
-  - [ ] Enable "Require branches to be up to date before merging".
-  - [ ] Add the following status checks as required: `check-format`, `check-types`, `lint`.
-  - [ ] Enable "Lock branch".
+onActivation(() => {
+  // ...
+});
+```
 
-  Finally, click "Create".
+## <a name='Documentation'></a>Documentation
 
-## Contributing
+### <a name='Filteringtabs'></a>Filtering tabs
 
-Contributions are welcome, but I will need to agree to significant changes since this is, after all, my personal template. Feel free to open an issue to discuss it.
+If you want to inject the content script only on certain tabs, you can pass a filter function to `setupContentScriptActivation`:
+
+```ts
+setupContentScriptActivation({
+  filterTab: (tab) => tab.url?.startsWith("http"),
+  inject: "content-script.js",
+});
+```
+
+The `tab` object ([`tabs.Tab` type](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/Tab)) is the one passed to the [`browser.action.onClicked.addListener`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/action/onClicked) callback, and contains information about the tab where the extension icon was clicked (such as the ID, URL, title, etc).
+
+### <a name='Executingcodebeforeorafterinjection'></a>Executing code before or after injection
+
+If you need to run some code before injection (e.g. preparing a database connection) or after injection (e.g. sending a message to the content script), you can use the `beforeInject` and `afterInject` options:
+
+```ts
+setupContentScriptActivation({
+  inject: {
+    async beforeInjection(context) {
+      // ...
+    },
+    async afterInjection(context) {
+      // ...
+    },
+    scripts: "content-script.js",
+  },
+});
+```
+
+Both functions can be synchronous or asynchronous. They receive a `context` object with information about the tab where the content script is injected.
+
+### <a name='Injectingstyles'></a>Injecting styles
+
+You can inject stylesheets in a similar way to scripts:
+
+```ts
+setupContentScriptActivation({
+  inject: {
+    // ...
+    styles: "content-style.css",
+  },
+});
+```
+
+### <a name='Customizingscriptandstylesheetinjection'></a>Customizing script and stylesheet injection
+
+If you need more control over how scripts or stylesheets are injected, you can pass option objects instead of strings:
+
+```ts
+setupContentScriptActivation({
+  inject: {
+    scripts: {
+      files: ["content-script.js"],
+      injectImmediately: false,
+    },
+    styles: {
+      files: ["content-style.css"],
+      origin: "USER",
+    },
+  },
+});
+```
+
+The options that can be passed correspond to the options that can be passed to [`browser.scripting.executeScript`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/scripting/executeScript) and [`browser.scripting.insertCSS`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/scripting/insertCSS), except for the `target` option (which is always set to the tab where the extension icon was clicked).
+
+### <a name='Injectingmultiplescriptsandstylesheets'></a>Injecting multiple scripts and stylesheets
+
+You can inject multiple scripts and stylesheets by passing an array of strings or option objects:
+
+```ts
+setupContentScriptActivation({
+  inject: {
+    scripts: ["content-script.js", "content-script-2.js"],
+    styles: ["content-style.css", "content-style-2.css"],
+  },
+});
+```
+
+Note that you need to call `onActivation` **from every content script** you want to inject.
+
+### <a name='Scriptsshorthands'></a>Scripts shorthands
+
+For brevity, `setupContentScriptActivation` has two shorthand APIs:
+
+- If you don't need to pass any other options, you can pass the script or scripts to inject directly in string form:
+
+  ```ts
+  setupContentScriptActivation("content-script.js");
+  ```
+
+- If you need to pass other options, but don't need any of the `inject` options, you can pass the script or scripts to inject directly to `inject`:
+
+  ```ts
+  setupContentScriptActivation({
+    filterTab: (tab) => tab.url?.startsWith("http"),
+    inject: "content-script.js",
+  });
+  ```
+
+### <a name='Omittingtheactivationcallback'></a>Omitting the activation callback
+
+If you don't need to run any code in your content script on activation (for example, if you only want to make sure that the script and styles are only injected once), you can omit the callback when calling `onActivation`:
+
+```ts
+import { onActivation } from "content-script-activation";
+
+onActivation();
+```
+
+Note that you still need to call `onActivation` from every content script you want to inject.
+
+### <a name='Multipleinstances'></a>Multiple instances
+
+If you want to use `setupContentScriptActivation` more than once, you **must** pass a unique ID to each instance:
+
+```ts
+// service-worker.js
+setupContentScriptActivation({
+  // ...
+  inject: "content-script-1.js",
+  scriptId: "content-script-1",
+});
+setupContentScriptActivation({
+  // ...
+  inject: "content-script-2.js",
+  scriptId: "content-script-2",
+});
+
+// content-script-1.js
+onActivation(() => {
+  // ...
+}, "content-script-1");
+
+// content-script-2.js
+onActivation(() => {
+  // ...
+}, "content-script-2");
+```
+
+An example use case for this is when you want to inject different scripts on different tabs. In this case, you can use the `filterTab` option to filter the tabs where each script is injected.
+
+### <a name='Manualactivation'></a>Manual activation
+
+By default, the content script is activated when the extension icon is clicked. For advanced use cases, you can pass `false` to the `injectOnClick` option. This will disable the default behavior, and `setupContentScriptActivation` will return an asynchronous function that you can call to activate the content script manually. The function takes a target as an argument, which corresponds to the `target` option of [`browser.scripting.executeScript`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/scripting/executeScript) ([`scripting.InjectionTarget`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/scripting/InjectionTarget)).
+
+```ts
+const activate = setupContentScriptActivation({
+  inject: "content-script.js",
+  injectOnClick: false,
+});
+
+// when you want to activate the content script:
+await activate({ tabId: myTabId });
+```
+
+## <a name='Browsersupport'></a>Browser support
+
+All browsers that support the underlying APIs should be supported. This is the case for Chrome and Firefox, and probably all desktop browsers that support extensions in the first place. Cross-browser API namespace compatibility is achieved through the [`browser-namespace`](https://github.com/DaniGuardiola/browser-namespace) package.
+
+## <a name='Featuresunderconsideration'></a>Features under consideration
+
+- Support `browser.scripting.removeCSS`.
