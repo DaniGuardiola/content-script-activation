@@ -77,10 +77,10 @@ setupContentScriptActivation("content-script.js");
 On the content script:
 
 ```ts
-import { onActivation } from "content-script-activation";
+import { setupActivation } from "content-script-activation";
 
-onActivation(() => {
-  // ...
+setupActivation(() => {
+  // do something on activation
 });
 ```
 
@@ -166,7 +166,7 @@ setupContentScriptActivation({
 });
 ```
 
-Note that you need to call `onActivation` **from every content script** you want to inject.
+Note that you need to call `setupActivation` **from every content script** you want to inject.
 
 ### <a name='Scriptsshorthands'></a>Scripts shorthands
 
@@ -189,15 +189,15 @@ For brevity, `setupContentScriptActivation` has two shorthand APIs:
 
 ### <a name='Omittingtheactivationcallback'></a>Omitting the activation callback
 
-If you don't need to run any code in your content script on activation (for example, if you only want to make sure that the script and styles are only injected once), you can omit the callback when calling `onActivation`:
+If you don't need to run any code in your content script on activation (for example, if you only want to make sure that the script and styles are only injected once), you can omit the callback when calling `setupActivation`:
 
 ```ts
-import { onActivation } from "content-script-activation";
+import { setupActivation } from "content-script-activation";
 
-onActivation();
+setupActivation();
 ```
 
-Note that you still need to call `onActivation` from every content script you want to inject.
+Note that you still need to call `setupActivation` from every content script you want to inject.
 
 ### <a name='Multipleinstances'></a>Multiple instances
 
@@ -217,12 +217,12 @@ setupContentScriptActivation({
 });
 
 // content-script-1.js
-onActivation(() => {
+setupActivation(() => {
   // ...
 }, "content-script-1");
 
 // content-script-2.js
-onActivation(() => {
+setupActivation(() => {
   // ...
 }, "content-script-2");
 ```
