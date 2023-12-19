@@ -1,5 +1,11 @@
 # content-script-activation
 
+## 1.0.1
+
+### Patch Changes
+
+- 7907e10: Fix: make `injectOnClick` optional.
+
 ## 1.0.0
 
 ### Major Changes
