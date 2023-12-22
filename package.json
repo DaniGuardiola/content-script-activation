@@ -1,7 +1,7 @@
 {
   "name": "content-script-activation",
   "description": "Simpler injection of content scripts in browser extensions. Inject once, activate on click.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": {
     "email": "hi@daniguardio.la",
     "name": "Dani Guardiola",
