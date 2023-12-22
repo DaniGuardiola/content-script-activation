@@ -1,5 +1,11 @@
 # content-script-activation
 
+## 1.0.3
+
+### Patch Changes
+
+- c1d2578: Make private stuff actually private.
+
 ## 1.0.2
 
 ### Patch Changes
