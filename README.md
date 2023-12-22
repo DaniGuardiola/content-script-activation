@@ -1,5 +1,11 @@
 <h1>content-script-activation</h1>
 
+<div align="center">
+
+[![API reference](https://img.shields.io/badge/tsdocs-%23007EC6?style=flat&logo=typescript&logoColor=%23fff&label=API%20reference&labelColor=%23555555)](https://tsdocs.dev/docs/content-script-activation/) [![Bundle size](https://deno.bundlejs.com/?q=content-script-activation%40latest&badge=&badge-style=flat&badge-raster=false)](https://bundlejs.com/?q=content-script-activation%40latest)
+
+</div>
+
 Simpler injection of content scripts in browser extensions. Inject once, activate on click.
 
 ```bash
